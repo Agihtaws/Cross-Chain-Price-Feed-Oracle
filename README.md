@@ -96,7 +96,7 @@ All contracts are deployed to **Ethereum Sepolia Testnet** and **Reactive Lasna 
 2.  **Deploy `ChainlinkFeedProxy` Contracts (on Sepolia):**
     This script deploys the ETH/USD, BTC/USD, and LINK/USD `ChainlinkFeedProxy` contracts to Sepolia and funds them.
     ```bash
-    npm run deploy:feed-proxies
+    npm run deploy:proxy
     ```
     *After successful deployment, **update your `.env` file** with the generated `FEED_PROXY_ADDR_ETH_USD`, `FEED_PROXY_ADDR_BTC_USD`, and `FEED_PROXY_ADDR_LINK_USD` addresses as instructed by the script output.*
 
