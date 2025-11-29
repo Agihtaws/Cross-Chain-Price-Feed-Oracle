@@ -31,16 +31,13 @@ module.exports = {
       gasPrice: "auto",
     },
 
-    // Hardhat local network for testing
+    
     hardhat: {
       chainId: 31337,
     },
   },
 
   etherscan: {
-    // Use a single Etherscan API key for V2, as per Etherscan's V2 migration.
-    // The hardhat-etherscan plugin will handle chain-specific verification
-    // using this single key.
     apiKey: process.env.ETHERSCAN_API_KEY || "",
   },
 
