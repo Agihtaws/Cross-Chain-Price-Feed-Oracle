@@ -116,10 +116,72 @@ All contracts are deployed to **Ethereum Sepolia Testnet** and **Reactive Lasna 
 
 ## Run Instructions
 
-### 1. Monitor Price Feeds
+### Deployed Contract Addresses and Environment Variables
 
-This script monitors the status of your Chainlink sources, `ChainlinkFeedProxy` contracts, and the `ChainlinkReactiveBridge`'s internal state.
+The following addresses are for the deployed contracts on **Ethereum Sepolia Testnet** and **Reactive Lasna Testnet**. Ensure these are correctly set in your environment variables (e.g., in a `.env` file sourced before execution).
 
+```bash
+# System Contract Address (Reactive Network - Lasna Testnet)
+SYSTEM_CONTRACT_ADDR=0x0000000000000000000000000000000000fffFfF
+
+# Chainlink Aggregator Addresses on Sepolia (Real Aggregators that emit events)
+CHAINLINK_ETH_USD_AGGREGATOR=0x719E22E3D4b690E5d96cCb40619180B5427F14AE
+CHAINLINK_BTC_USD_AGGREGATOR=0x17Dac87b07EAC97De4E182Fc51C925ebB7E723e2
+CHAINLINK_LINK_USD_AGGREGATOR=0x5A2734CC0341ea6564dF3D00171cc99C63B1A7d3
+
+# Deployed ChainlinkFeedProxy Addresses on Ethereum Sepolia
+FEED_PROXY_ADDR_ETH_USD=0x120a855499cC8e777cC1D06078Aff78d78bAa8f2
+FEED_PROXY_ADDR_BTC_USD=0x9a1b222D6AC1467b4302CEE2fd28074B0bD8367f
+FEED_PROXY_ADDR_LINK_USD=0xDBF1CdB10956ba2474B12042f78DB1A61061032F
+
+# Deployed ChainlinkReactiveBridge Address on Reactive Lasna
+BRIDGE_ADDR=0x7603470ae0116957ce2bC85929f63319dc07c7ef
+```
+
+### Transaction Hashes for Deployments
+
+*   ChainlinkFeedProxy for ETH/USD:
+
+    *   Transaction Hash: 0x54a0338718008727754994f2c0a1e66373aa45112d3283bb4e8b2678680770d6
+    *   Etherscan Verification: https://sepolia.etherscan.io/address/0x120a855499cC8e777cC1D06078Aff78d78bAa8f2#code
+
+
+*   ChainlinkFeedProxy for BTC/USD:
+
+    *   Transaction Hash: 0xdbe1333523bfeeb09e7248f54d7e922bfc2f332bdea19b1d9c75d0166fa43612
+    *   Etherscan Verification: https://sepolia.etherscan.io/address/0x9a1b222D6AC1467b4302CEE2fd28074B0bD8367f#code
+
+
+*   ChainlinkFeedProxy for LINK/USD:
+
+    *   Transaction Hash: 0xfda2c751387567e06975c246828b55f92d6f93dd5cf79990c4bdf686eb73be19
+    *   Etherscan Verification: https://sepolia.etherscan.io/address/0xDBF1CdB10956ba2474B12042f78DB1A61061032F#code
+
+
+*   ChainlinkReactiveBridge:
+
+    *   Transaction Hash: 0x81d1d220b147745375d43ceafb051bfb3143fe892bd2feecb3e66434ab57aec1
+    *   Reactscan RVM ID: https://lasna.reactscan.net/rvm/0x63eea403e3075D9e6b5eA18c28021e6FfdD04a67
+
+
+
+### Funding ChainlinkReactiveBridge
+
+To fund your ChainlinkReactiveBridge contract on the Reactive Lasna Testnet and activate it, you can deposit REACT tokens via the Reactive Network's system contract. This method automatically settles any outstanding debt.
+
+First, ensure your PRIVATE_KEY and REACTIVE_RPC environment variables are correctly sourced.
+Here is the cast command to fund your contract with 0.1 REACT:
+```bash
+cast send --rpc-url $REACTIVE_RPC --private-key $PRIVATE_KEY 0x0000000000000000000000000000000000fffFfF "depositTo(address)" 0x7603470ae0116957ce2bC85929f63319dc07c7ef --value 0.1ether
+```
+
+After executing this command, you can verify the new balance of your ChainlinkReactiveBridge contract using the following cast command:
+```bash
+cast balance 0x7603470ae0116957ce2bC85929f63319dc07c7ef --rpc-url $REACTIVE_RPC
+```
+
+Monitor Price Feeds
+This script monitors the status of your Chainlink sources, ChainlinkFeedProxy contracts, and the ChainlinkReactiveBridge's internal state.
 ```bash
 npx hardhat run scripts/monitorAllFeeds.js --network reactiveLasna
 ```
@@ -129,69 +191,14 @@ To run continuously:
 npx hardhat run scripts/monitorAllFeeds.js --network reactiveLasna continuous
 ```
 
-### 2. Manual cast Interactions (Examples)
+### Manual cast Interactions (Examples)
 After deploying and allowing time for price updates, you can use cast to query contract states.
-
 Check ChainlinkReactiveBridge Internal State (Example: BTC/USD):
 ```bash
 cast call $BRIDGE_ADDR "lastUpdateTimestampForAggregator(address)" $CHAINLINK_BTC_USD_AGGREGATOR --rpc-url $REACTIVE_RPC | cast to-dec
-cast call $BRIDGE_ADDR "lastAnswerForAggregator(address)" $CHAINLINK_BTC_USD_AGGREGATOR --rpc-url $REACTIVE_RPC | cast to-dec
-cast call $BRIDGE_ADDR "updateCountForAggregator(address)" $CHAINLINK_BTC_USD_AGGREGATOR --rpc-url $REACTIVE_RPC | cast to-dec
 ```
 
-Check ChainlinkFeedProxy Latest Data (Example: ETH/USD):
-```bash
-cast call $FEED_PROXY_ADDR_ETH_USD "latestRoundData()" --rpc-url $SEPOLIA_RPC
-```
+## Documentation and License
 
-### 3. Run Unit Tests
-Unit tests verify individual contract logic on a local Hardhat Network.
-```bash
-npx hardhat test
-```
-
-### 4. Run Integration Tests (End-to-End Flow)
-Integration tests simulate the full cross-chain flow on live testnets using the TestChainlinkEmitter.
-Important Temporary Setup for Integration Tests:
-
-Redeploy ChainlinkReactiveBridge for testing: Before running integration tests, you need to temporarily modify scripts/deploy-bridge.js to subscribe to your TEST_CHAINLINK_EMITTER_ADDR for one of the feeds.
-
-Open scripts/deploy-bridge.js.
-Find the chainlinkAggregatorAddresses array.
-Temporarily replace one of the process.env.CHAINLINK_XXX_USD_AGGREGATOR entries with process.env.TEST_CHAINLINK_EMITTER_ADDR. For example, to test with the BTC feed proxy:
-```bash
-const chainlinkAggregatorAddresses = [
-    process.env.CHAINLINK_ETH_USD_AGGREGATOR,
-    process.env.TEST_CHAINLINK_EMITTER_ADDR, // Use emitter for BTC spot
-    process.env.CHAINLINK_LINK_USD_AGGREGATOR
-];
-```
-
-Redeploy the bridge with this change: npm run deploy:bridge. Update BRIDGE_ADDR in your .env with the new address.
-
-
-### Execute Integration Test:
-```bash
-npx hardhat run scripts/integration-test.js --network reactiveLasna
-```
-
-### Revert Changes After Integration Testing:
-
-After the integration test, revert the temporary modification in scripts/deploy-bridge.js (to subscribe back to the actual Chainlink aggregators).
-Redeploy your ChainlinkReactiveBridge one final time for normal operation.
-
-
-### Contract and Deployment Addresses
-(This section will be populated with your actual deployed addresses for the final submission. Ensure these are up-to-date after all deployments.)
-Reactive Lasna Testnet:
-
-ChainlinkReactiveBridge Address: <YOUR_BRIDGE_ADDR>
-RVM ID (Deployer Address): <YOUR_DEPLOYER_ADDRESS>
-
-### Ethereum Sepolia Testnet:
-
-ChainlinkFeedProxy (ETH/USD) Address: <YOUR_FEED_PROXY_ADDR_ETH_USD>
-ChainlinkFeedProxy (BTC/USD) Address: <YOUR_FEED_PROXY_ADDR_BTC_USD>
-ChainlinkFeedProxy (LINK/USD) Address: <YOUR_FEED_PROXY_ADDR_LINK_USD>
-TestChainlinkEmitter Address (for integration tests): <YOUR_TEST_CHAINLINK_EMITTER_ADDR>
-
+*   **Project Documentation (PDF):** [Documentation](https://github.com/Agihtaws/Cross-Chain-Price-Feed-Oracle/blob/main/Documentation.pdf)
+*   **MIT License:** [License](https://github.com/Agihtaws/Cross-Chain-Price-Feed-Oracle/blob/main/LICENSE)
